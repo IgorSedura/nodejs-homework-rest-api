@@ -13,6 +13,12 @@ const addSchema = Joi.object({
     phone: Joi.string().required(),
 })
 
+const updateSchema = Joi.object({
+  name: Joi.string(),
+  email: Joi.string(),
+  phone: Joi.string(),
+}).min(1);
+
 router.get('/', async (req, res, next) => {
   try {
     const result = await contacts.listContacts()
@@ -56,9 +62,10 @@ router.post('/', async (req, res, next) => {
 
 
 
+
 router.put('/:contactId', async (req, res, next) => {
   try {
-        const { error } = addSchema.validate(req.body)
+        const { error } = updateSchema.validate(req.body)
     if (error) {
       throw HttpError(400, error.message)
     }
