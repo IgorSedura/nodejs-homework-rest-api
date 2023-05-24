@@ -1,104 +1,106 @@
-const express = require('express')
-const Joi = require("joi")
+const express = require("express");
 
-const contacts = require("../../models/contacts")
+const {
+  Contact,
+  addSchema,
+  updateSchema,
+  updateFavoriteSchema,
+} = require("../../models/contact");
 
-const {HttpError} = require("../../helpers")
+const { isValidId } = require("../../middlewares");
 
-const router = express.Router()
+const { HttpError } = require("../../helpers");
 
-const addSchema = Joi.object({
-    name: Joi.string().required(),
-    email: Joi.string().required(),
-    phone: Joi.string().required(),
-})
+const router = express.Router();
 
-const updateSchema = Joi.object({
-  name: Joi.string(),
-  email: Joi.string(),
-  phone: Joi.string(),
-}).min(1);
-
-router.get('/', async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
-    const result = await contacts.listContacts()
-  res.json(result)
+    const result = await Contact.find();
+    res.json(result);
   } catch (error) {
-   next(error)
+    next(error);
   }
+});
 
-})
-
-router.get('/:contactId', async (req, res, next) => {
+router.get("/:contactId", isValidId, async (req, res, next) => {
   try {
     const { contactId } = req.params;
-    const result = await contacts.getContactById(contactId)
+    const result = await Contact.findById(contactId);
     if (!result) {
-    throw HttpError(404, "Not found")
-      }
-   
+      throw HttpError(404, "Not found");
+    }
+
     res.json(result);
-     
   } catch (error) {
-   next(error)
-    }
-  })
- 
+    next(error);
+  }
+});
 
-
-router.post('/', async (req, res, next) => {
+router.post("/", async (req, res, next) => {
   try {
-    const { error } = addSchema.validate(req.body)
+    const { error } = addSchema.validate(req.body);
     if (error) {
-      throw HttpError(400, error.message)
+      throw HttpError(400, error.message);
     }
-    const result = await contacts.addContact(req.body)
+    const result = await Contact.create(req.body);
     res.status(201).json(result);
   } catch (error) {
-    next(error)
+    next(error);
   }
+});
 
-})
-
-
-
-
-router.put('/:contactId', async (req, res, next) => {
+router.put("/:contactId", isValidId, async (req, res, next) => {
   try {
-        const { error } = updateSchema.validate(req.body)
+    const { error } = updateSchema.validate(req.body);
     if (error) {
-      throw HttpError(400, error.message)
+      throw HttpError(400, error.message);
     }
     const { contactId } = req.params;
-    const result = await contacts.updateContact(contactId, req.body);
-     if (!result) {
-    throw HttpError(404, "Not found")
+    const result = await Contact.findByIdAndUpdate(contactId, req.body, {
+      new: true,
+    });
+    if (!result) {
+      throw HttpError(404, "Not found");
     }
-      res.json(result)
+    res.json(result);
   } catch (error) {
-    next(error)
+    next(error);
   }
+});
 
-})
+router.patch("/:contactId/favorite", isValidId, async (req, res, next) => {
+  try {
+    const { error } = updateFavoriteSchema.validate(req.body);
+    if (error) {
+      throw HttpError(400, "missing field favorite");
+    }
+    const { contactId } = req.params;
+    const result = await Contact.findByIdAndUpdate(contactId, req.body, {
+      new: true,
+    });
 
+    if (!result) {
+      throw HttpError(404, "Not found");
+    }
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+});
 
-router.delete('/:contactId', async (req, res, next) => {
+router.delete("/:contactId", isValidId, async (req, res, next) => {
   try {
     const { contactId } = req.params;
-    const result = await contacts.removeContact(contactId)
-     if (!result) {
-    throw HttpError(404, "Not found")
+    const result = await Contact.findByIdAndDelete(contactId);
+    if (!result) {
+      throw HttpError(404, "Not found");
     }
     res.json({
-
-      message: "Delete success"
-    })
+      message: "Delete success",
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
+});
 
-})
-
-
-
-module.exports = router
+module.exports = router;
