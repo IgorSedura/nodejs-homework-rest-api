@@ -15,7 +15,13 @@ const router = express.Router();
 
 router.get("/", authenticate, async (req, res, next) => {
   try {
-    const result = await Contact.find();
+    const { _id: owner } = req.user;
+    const { page = 1, limit = 5 } = req.query;
+    const skip = (page - 1) * limit;
+    const result = await Contact.find({ owner }, { skip, limit }).populate(
+      "owner",
+      "email subscription"
+    );
     res.json(result);
   } catch (error) {
     next(error);
@@ -42,7 +48,8 @@ router.post("/", authenticate, async (req, res, next) => {
     if (error) {
       throw HttpError(400, error.message);
     }
-    const result = await Contact.create(req.body);
+    const { _id: owner } = req.user;
+    const result = await Contact.create({ ...req.body, owner });
     res.status(201).json(result);
   } catch (error) {
     next(error);
